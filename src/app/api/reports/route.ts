@@ -74,7 +74,10 @@ export async function GET() {
       outOfStockCount: productRows.filter(product => product.stockStatus === 'Out of Stock').length,
       categoryCount: categoryStats.length,
       products: productRows,
-      categoryDistribution: categoryStats.map(category => ({
+      categoryDistribution: categoryStats.map((category: {
+        category: string
+        _count: { id: number }
+      }) => ({
         category: category.category,
         count: category._count.id,
       })),
