@@ -4,6 +4,34 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 import type { ProductReportItem } from '@/types'
 
+type ReportProduct = {
+  id: number
+  name: string
+  category: string
+  supplier: { name: string } | null
+  price: number
+  stock: number
+  minStock: number
+}
+
+type SoldItem = {
+  productId: number
+  quantity: number
+}
+
+type CategoryStat = {
+  category: string
+  _count: { id: number }
+}
+
+type RecentSale = {
+  id: number
+  receiptNumber: string
+  total: number
+  createdAt: Date
+  items: Array<unknown>
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -12,15 +40,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const products: Array<{
-      id: number
-      name: string
-      category: string
-      supplier: { name: string } | null
-      price: number
-      stock: number
-      minStock: number
-    }> = await prisma.product.findMany({
+    const products: ReportProduct[] = await prisma.product.findMany({
       include: { supplier: true },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
     })
@@ -30,18 +50,10 @@ export async function GET() {
     })
 
     const soldByProduct = new Map<number, number>()
-    soldItems.forEach((item: { productId: number; quantity: number }) => {
+    soldItems.forEach((item: SoldItem) => {
       soldByProduct.set(item.productId, (soldByProduct.get(item.productId) || 0) + item.quantity)
     })
-    const productRows: ProductReportItem[] = products.map((product: {
-      id: number
-      name: string
-      category: string
-      supplier: { name: string } | null
-      price: number
-      stock: number
-      minStock: number
-    }) => {
+    const productRows: ProductReportItem[] = products.map((product: ReportProduct) => {
       const stockStatus =
         product.stock === 0 ? 'Out of Stock' :
           product.stock <= product.minStock ? 'Low Stock' :
@@ -74,10 +86,7 @@ export async function GET() {
       outOfStockCount: productRows.filter(product => product.stockStatus === 'Out of Stock').length,
       categoryCount: categoryStats.length,
       products: productRows,
-      categoryDistribution: categoryStats.map((category: {
-        category: string
-        _count: { id: number }
-      }) => ({
+      categoryDistribution: categoryStats.map((category: CategoryStat) => ({
         category: category.category,
         count: category._count.id,
       })),
@@ -136,13 +145,7 @@ export async function GET() {
         totalItemsSold: itemsSummary._sum.quantity || 0,
         averageSaleValue: totalSales > 0 ? totalRevenue / totalSales : 0,
         taxCollected: salesSummary._sum.tax || 0,
-      recentSales: recentSales.map((sale: {
-        id: number
-        receiptNumber: string
-        total: number
-        createdAt: Date
-        items: Array<unknown>
-      }) => ({
+      recentSales: recentSales.map((sale: RecentSale) => ({
         id: sale.id,
         receiptNumber: sale.receiptNumber,
         total: sale.total,

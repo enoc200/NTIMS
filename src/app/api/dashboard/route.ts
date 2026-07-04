@@ -3,6 +3,48 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
+type DashboardProduct = {
+  id: number
+  name: string
+  category: string
+  price: number
+  stock: number
+  minStock: number
+}
+
+type SaleTrendItem = {
+  createdAt: Date
+  total: number
+}
+
+type FastMovingSaleItem = {
+  productId: number
+  productName: string
+  quantity: number
+  product: {
+    price: number
+    category: string
+    stock: number
+  }
+}
+
+type SoldProductId = {
+  productId: number
+}
+
+type CategoryStat = {
+  category: string
+  _count: { id: number }
+}
+
+type RecentSale = {
+  id: number
+  receiptNumber: string
+  total: number
+  createdAt: Date
+  items: unknown[]
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -23,21 +65,11 @@ export async function GET() {
     const totalProducts = await prisma.product.count()
 
     // Inventory value
-    const products = await prisma.product.findMany()
-    const inventoryValue = products.reduce(
-      (sum: number, p: { price: number; stock: number }) => sum + p.price * p.stock,
-      0
-    )
+    const products: DashboardProduct[] = await prisma.product.findMany()
+    const inventoryValue = products.reduce((sum, p) => sum + p.price * p.stock, 0)
 
     // Actually compute low stock properly
-    const allProducts = await prisma.product.findMany() as Array<{
-      id: number
-      name: string
-      category: string
-      price: number
-      stock: number
-      minStock: number
-    }>
+    const allProducts: DashboardProduct[] = await prisma.product.findMany()
     const lowStock = allProducts.filter(p => p.stock > 0 && p.stock <= p.minStock)
     const outOfStock = allProducts.filter(p => p.stock === 0)
 
@@ -46,7 +78,7 @@ export async function GET() {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
     sevenDaysAgo.setHours(0, 0, 0, 0)
 
-    const salesLast7Days = await prisma.sale.findMany({
+    const salesLast7Days: SaleTrendItem[] = await prisma.sale.findMany({
       where: { createdAt: { gte: sevenDaysAgo } },
       select: { createdAt: true, total: true },
     })
@@ -58,7 +90,7 @@ export async function GET() {
       d.setDate(d.getDate() - i)
       trendMap[d.toISOString().slice(0, 10)] = 0
     }
-    salesLast7Days.forEach((s: { createdAt: Date; total: number }) => {
+    salesLast7Days.forEach((s: SaleTrendItem) => {
       const dateKey = s.createdAt.toISOString().slice(0, 10)
       if (trendMap[dateKey] !== undefined) trendMap[dateKey] += s.total
     })
@@ -75,12 +107,7 @@ export async function GET() {
       include: { product: true },
     })
     const fastMap: Record<number, { name: string; price: number; category: string; stock: number; totalSold: number }> = {}
-    saleItemsLast7.forEach((item: {
-      productId: number
-      productName: string
-      quantity: number
-      product: { price: number; category: string; stock: number }
-    }) => {
+    saleItemsLast7.forEach((item: FastMovingSaleItem) => {
       if (!fastMap[item.productId]) {
         fastMap[item.productId] = {
           name: item.productName,
@@ -103,27 +130,29 @@ export async function GET() {
     const soldProductIds = (await prisma.saleItem.findMany({
       where: { sale: { createdAt: { gte: thirtyDaysAgo } } },
       select: { productId: true },
-    })).map((s: { productId: number }) => s.productId)
+    })) as SoldProductId[]
+    const soldProductIdList = soldProductIds.map((s: SoldProductId) => s.productId)
 
     const deadStock = allProducts
-      .filter(p => p.stock > 0 && !soldProductIds.includes(p.id))
+      .filter(p => p.stock > 0 && !soldProductIdList.includes(p.id))
       .map(p => ({ id: p.id, name: p.name, category: p.category, stock: p.stock, value: p.price * p.stock }))
 
     // Out of stock
     const outOfStockItems = outOfStock.map(p => ({ id: p.id, name: p.name, category: p.category }))
 
     // Category distribution
-    const categoryStats = await prisma.product.groupBy({
+    const categoryStatsRaw = await prisma.product.groupBy({
       by: ['category'],
       _count: { id: true },
     })
-    const categoryDistribution = categoryStats.map((c: { category: string; _count: { id: number } }) => ({
+    const categoryStats = categoryStatsRaw as CategoryStat[]
+    const categoryDistribution = categoryStats.map((c: CategoryStat) => ({
       category: c.category,
       count: c._count.id
     }))
 
     // Recent Transactions
-    const recentSales = await prisma.sale.findMany({
+    const recentSales: RecentSale[] = await prisma.sale.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5,
       include: { items: true }
@@ -143,18 +172,12 @@ export async function GET() {
       deadStock,
       outOfStockItems,
       categoryDistribution,
-      recentSales: recentSales.map((s: {
-        id: number
-        receiptNumber: string
-        total: number
-        createdAt: Date
-        items: unknown[]
-      }) => ({
+      recentSales: recentSales.map((s: RecentSale) => ({
         id: s.id,
         receiptNumber: s.receiptNumber,
         total: s.total,
         createdAt: s.createdAt,
-        itemCount: s.items.length
+        itemCount: s.items.length,
       }))
     })
   } catch (error) {
