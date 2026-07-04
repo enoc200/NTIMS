@@ -143,7 +143,13 @@ export async function GET() {
       deadStock,
       outOfStockItems,
       categoryDistribution,
-      recentSales: recentSales.map(s => ({
+      recentSales: recentSales.map((s: {
+        id: number
+        receiptNumber: string
+        total: number
+        createdAt: Date
+        items: unknown[]
+      }) => ({
         id: s.id,
         receiptNumber: s.receiptNumber,
         total: s.total,
