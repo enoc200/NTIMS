@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
       })
 
       // 2. Check for low stock items and notify
-      const productIds = sale.items.map(i => i.productId)
+      const productIds = sale.items.map((i: { productId: number }) => i.productId)
       const products = await prisma.product.findMany({ where: { id: { in: productIds } } })
       
       for (const p of products) {
