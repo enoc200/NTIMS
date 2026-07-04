@@ -3,6 +3,21 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { prisma } from '@/lib/prisma'
 
+type SupplierRow = {
+  id: number
+  name: string
+  contactPerson: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  active: boolean
+  createdAt: Date
+  updatedAt: Date
+  _count: {
+    products: number
+  }
+}
+
 function cleanOptional(value: unknown) {
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
@@ -48,7 +63,7 @@ export async function GET(request: NextRequest) {
       orderBy: { name: 'asc' },
     })
 
-    return NextResponse.json(suppliers.map(supplier => ({
+    return NextResponse.json(suppliers.map((supplier: SupplierRow) => ({
       id: supplier.id,
       name: supplier.name,
       contactPerson: supplier.contactPerson,
