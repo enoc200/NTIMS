@@ -155,22 +155,18 @@ export default function SuppliersPage() {
         <div className="vibrant-card primary">
           <div className="vibrant-label">Total Suppliers</div>
           <div className="vibrant-value">{suppliers.length}</div>
-          <div className="icon-bg"><HiOutlineTruck /></div>
         </div>
         <div className="vibrant-card success">
           <div className="vibrant-label">Active Suppliers</div>
           <div className="vibrant-value">{totals.active}</div>
-          <div className="icon-bg"><HiOutlineOfficeBuilding /></div>
         </div>
         <div className="vibrant-card warning">
           <div className="vibrant-label">Inactive Suppliers</div>
           <div className="vibrant-value">{totals.inactive}</div>
-          <div className="icon-bg"><HiOutlineUser /></div>
         </div>
         <div className="vibrant-card info">
           <div className="vibrant-label">Linked Products</div>
           <div className="vibrant-value">{totals.linkedProducts}</div>
-          <div className="icon-bg"><HiOutlineTruck /></div>
         </div>
       </div>
 

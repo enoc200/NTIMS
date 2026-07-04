@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HiOutlineBell, HiOutlineCheckCircle, HiOutlineExclamation, HiOutlineInformationCircle } from 'react-icons/hi'
 import { formatDateTime } from '@/lib/utils'
 import type { Notification } from '@/types'
@@ -7,26 +7,32 @@ import type { Notification } from '@/types'
 export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [loading, setLoading] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const unreadCount = Array.isArray(notifications) ? notifications.filter(n => !n.read).length : 0
 
-  async function fetchNotifications() {
-    try {
-      const res = await fetch('/api/notifications')
-      if (!res.ok) return
-      const data = await res.json()
-      if (Array.isArray(data)) {
-        setNotifications(data)
-      }
-    } catch (error) {}
-  }
-
   useEffect(() => {
-    fetchNotifications()
-    const interval = setInterval(fetchNotifications, 10000) // Refresh every 10 seconds
-    return () => clearInterval(interval)
+    let active = true
+
+    async function loadNotifications() {
+      try {
+        const res = await fetch('/api/notifications')
+        if (!res.ok) return
+        const data = await res.json()
+        if (active && Array.isArray(data)) {
+          setNotifications(data)
+        }
+      } catch {}
+    }
+
+    void loadNotifications()
+    const interval = setInterval(() => {
+      void loadNotifications()
+    }, 10000)
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
   }, [])
 
   useEffect(() => {
@@ -47,7 +53,7 @@ export default function NotificationCenter() {
         body: JSON.stringify({ id })
       })
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-    } catch (error) {}
+    } catch {}
   }
 
   async function markAllAsRead() {
@@ -58,7 +64,7 @@ export default function NotificationCenter() {
         body: JSON.stringify({ readAll: true })
       })
       setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-    } catch (error) {}
+    } catch {}
   }
 
   function getIcon(type: string) {

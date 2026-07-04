@@ -117,7 +117,7 @@ export async function GET() {
       by: ['category'],
       _count: { id: true },
     })
-    const categoryDistribution = categoryStats.map(c => ({
+    const categoryDistribution = categoryStats.map((c: { category: string; _count: { id: number } }) => ({
       category: c.category,
       count: c._count.id
     }))

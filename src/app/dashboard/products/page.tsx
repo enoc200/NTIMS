@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ProductForm from '@/components/ProductForm'
@@ -19,11 +19,12 @@ export default function ProductsPage() {
   const [stockLevel, setStockLevel] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [formKey, setFormKey] = useState(0)
 
   const role = session?.user?.role
   const productList = Array.isArray(products) ? products : []
 
-  async function fetchData() {
+  const fetchData = useCallback(async function fetchData() {
     setLoading(true)
     try {
       const query = new URLSearchParams({ search, category, stockLevel }).toString()
@@ -45,7 +46,7 @@ export default function ProductsPage() {
       setProducts(dataP)
       setCategories(Array.isArray(dataC) ? dataC : [])
       setSuppliers(Array.isArray(dataS) ? dataS : [])
-    } catch (error) {
+    } catch {
       setProducts([])
       setCategories([])
       setSuppliers([])
@@ -53,14 +54,14 @@ export default function ProductsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [search, category, stockLevel])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchData()
+      void fetchData()
     }, 300)
     return () => clearTimeout(timer)
-  }, [search, category, stockLevel])
+  }, [fetchData])
 
   async function handleDelete(id: number) {
     if (!confirm('Are you sure you want to delete this product?')) return
@@ -68,7 +69,7 @@ export default function ProductsPage() {
       const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error()
       toast.success('Product deleted')
-      fetchData()
+      void fetchData()
     } catch {
       toast.error('Failed to delete product')
     }
@@ -76,11 +77,13 @@ export default function ProductsPage() {
 
   function openEdit(p: Product) {
     setEditingProduct(p)
+    setFormKey(prev => prev + 1)
     setIsFormOpen(true)
   }
 
   function openAdd() {
     setEditingProduct(null)
+    setFormKey(prev => prev + 1)
     setIsFormOpen(true)
   }
 
@@ -193,6 +196,7 @@ export default function ProductsPage() {
       )}
 
       <ProductForm
+        key={formKey}
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSaved={fetchData}

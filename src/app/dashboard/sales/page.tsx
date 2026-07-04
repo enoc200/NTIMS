@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import Modal from '@/components/Modal'
 import ReceiptModal from '@/components/ReceiptModal'
@@ -24,6 +24,7 @@ export default function SalesPage() {
   const productList = Array.isArray(products) ? products : []
 
   async function fetchProducts() {
+    setLoading(true)
     try {
       const res = await fetch('/api/products')
       const data = await res.json()
@@ -33,7 +34,7 @@ export default function SalesPage() {
         throw new Error(message)
       }
       setProducts(data)
-    } catch (error) {
+    } catch {
       setProducts([])
       toast.error('Failed to load products')
     } finally {
@@ -42,17 +43,51 @@ export default function SalesPage() {
   }
 
   useEffect(() => {
-    fetchProducts()
+    let active = true
+
+    async function loadProducts() {
+      try {
+        const res = await fetch('/api/products')
+        const data = await res.json()
+        if (!res.ok || !Array.isArray(data)) {
+          if (active) setProducts([])
+          return
+        }
+        if (active) setProducts(data)
+      } catch {
+        if (active) setProducts([])
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    void loadProducts()
+    return () => {
+      active = false
+    }
   }, [])
 
   useEffect(() => {
     if (!historyOpen) return
-    setHistoryLoading(true)
-    fetch('/api/sales')
-      .then(r => r.json())
-      .then((data: Sale[]) => setHistorySales(data))
-      .catch(() => toast.error('Failed to fetch receipts'))
-      .finally(() => setHistoryLoading(false))
+    let active = true
+
+    async function loadHistory() {
+      setHistoryLoading(true)
+      try {
+        const response = await fetch('/api/sales')
+        const data = await response.json()
+        if (active) setHistorySales(Array.isArray(data) ? data : [])
+      } catch {
+        toast.error('Failed to fetch receipts')
+      } finally {
+        if (active) setHistoryLoading(false)
+      }
+    }
+
+    void loadHistory()
+    return () => {
+      active = false
+    }
   }, [historyOpen])
 
   const filteredHistory = historySearch.trim()
@@ -135,7 +170,7 @@ export default function SalesPage() {
       setReceiptSale(sale)
       setIsReceiptOpen(true)
       setCart([])
-      fetchProducts() // Refresh stock
+      void fetchProducts()
       toast.success('Sale completed successfully')
     } catch (error: unknown) {
       const err = error as { message?: string }

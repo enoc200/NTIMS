@@ -6,12 +6,10 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import { formatDate, formatKES } from '@/lib/utils'
 import type { ProductReportItem, ReportsData } from '@/types'
 import {
-  HiOutlineCash,
   HiOutlineChartBar,
   HiOutlineCube,
   HiOutlineExclamationCircle,
   HiOutlineShoppingBag,
-  HiOutlineTrendingUp,
 } from 'react-icons/hi'
 
 type ReportTab = 'sales' | 'products'
@@ -99,22 +97,18 @@ export default function ReportsPage() {
             <div className="vibrant-card primary">
               <div className="vibrant-label">Total Revenue</div>
               <div className="vibrant-value">{formatKES(salesReport.totalRevenue)}</div>
-              <div className="icon-bg"><HiOutlineCash /></div>
             </div>
             <div className="vibrant-card info">
               <div className="vibrant-label">Completed Sales</div>
               <div className="vibrant-value">{salesReport.totalSales}</div>
-              <div className="icon-bg"><HiOutlineShoppingBag /></div>
             </div>
             <div className="vibrant-card success">
               <div className="vibrant-label">Items Sold</div>
               <div className="vibrant-value">{salesReport.totalItemsSold}</div>
-              <div className="icon-bg"><HiOutlineTrendingUp /></div>
             </div>
             <div className="vibrant-card warning">
               <div className="vibrant-label">Average Sale</div>
               <div className="vibrant-value">{formatKES(salesReport.averageSaleValue)}</div>
-              <div className="icon-bg"><HiOutlineChartBar /></div>
             </div>
           </div>
 
@@ -170,22 +164,18 @@ export default function ReportsPage() {
             <div className="vibrant-card primary">
               <div className="vibrant-label">Inventory Value</div>
               <div className="vibrant-value">{formatKES(productReport.totalInventoryValue)}</div>
-              <div className="icon-bg"><HiOutlineCash /></div>
             </div>
             <div className="vibrant-card info">
               <div className="vibrant-label">Products</div>
               <div className="vibrant-value">{productReport.totalProducts}</div>
-              <div className="icon-bg"><HiOutlineCube /></div>
             </div>
             <div className="vibrant-card success">
               <div className="vibrant-label">Categories</div>
               <div className="vibrant-value">{productReport.categoryCount}</div>
-              <div className="icon-bg"><HiOutlineChartBar /></div>
             </div>
             <div className="vibrant-card warning">
               <div className="vibrant-label">Stock Alerts</div>
               <div className="vibrant-value">{productReport.lowStockCount + productReport.outOfStockCount}</div>
-              <div className="icon-bg"><HiOutlineExclamationCircle /></div>
             </div>
           </div>
 

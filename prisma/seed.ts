@@ -1,9 +1,15 @@
+import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 
+const databaseUrl = process.env.DATABASE_URL
+if (!databaseUrl || typeof databaseUrl !== 'string') {
+  throw new Error('DATABASE_URL is not defined or is not a string. Check your .env file.')
+}
+
 const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL || '',
+  connectionString: databaseUrl,
 })
 
 const prisma = new PrismaClient({ adapter })

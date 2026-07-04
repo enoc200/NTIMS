@@ -57,7 +57,7 @@ export default function ReceiptModal({ isOpen, onClose, sale }: Props) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth={480}>
+    <Modal isOpen={isOpen} onClose={onClose} title="" maxWidth={560}>
       <div style={{ background: 'var(--gradient-success)', padding: '32px', textAlign: 'center', color: 'white' }}>
         <HiOutlineCheckCircle style={{ fontSize: '48px', marginBottom: '12px' }} />
         <h2 style={{ fontSize: '24px', fontWeight: 800 }}>Transaction Success</h2>

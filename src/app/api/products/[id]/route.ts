@@ -3,6 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
+function isPrismaError(error: unknown): error is { code: string } {
+  return typeof error === 'object' && error !== null && 'code' in error
+}
+
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
@@ -87,8 +91,8 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
 
     await prisma.product.delete({ where: { id: idNum } })
     return NextResponse.json({ message: 'Product deleted' })
-  } catch (error: any) {
-    if (error.code === 'P2003') {
+  } catch (error: unknown) {
+    if (isPrismaError(error) && error.code === 'P2003') {
       return NextResponse.json({ error: 'Cannot delete product because it has sales history. Try updating its stock to 0 instead.' }, { status: 400 })
     }
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })

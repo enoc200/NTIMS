@@ -21,12 +21,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   useEffect(() => {
-    fetch('/api/dashboard')
-      .then(r => r.json())
-      .then(d => {
-        if (d.stats) setCounts({ lowStockCount: d.stats.lowStockCount, outOfStockCount: d.stats.outOfStockCount })
-      })
-      .catch(() => { })
+    let active = true
+
+    async function loadCounts() {
+      try {
+        const response = await fetch('/api/dashboard')
+        const data = await response.json()
+        if (active && data.stats) {
+          setCounts({ lowStockCount: data.stats.lowStockCount, outOfStockCount: data.stats.outOfStockCount })
+        }
+      } catch {}
+    }
+
+    void loadCounts()
+    return () => {
+      active = false
+    }
   }, [])
 
   return (

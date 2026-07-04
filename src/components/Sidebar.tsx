@@ -26,6 +26,11 @@ export default function Sidebar() {
     return pathname.startsWith(href)
   }
 
+  async function handleSignOut() {
+    await signOut({ redirect: false })
+    window.location.assign('/')
+  }
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -67,7 +72,7 @@ export default function Sidebar() {
             <span className="user-role">{role?.replace('_', ' ')}</span>
           </div>
         </div>
-        <button className="btn-logout" onClick={() => signOut({ callbackUrl: '/' })}>
+        <button type="button" className="btn-logout" onClick={handleSignOut}>
           <HiOutlineLogout />
           <span>Sign Out</span>
         </button>

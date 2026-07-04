@@ -26,6 +26,11 @@ export default function Navbar() {
     return pathname.startsWith(href)
   }
 
+  async function handleSignOut() {
+    await signOut({ redirect: false })
+    window.location.assign('/')
+  }
+
   return (
     <nav className="navbar">
       <div className="navbar-brand">
@@ -47,7 +52,7 @@ export default function Navbar() {
               <div className="user-name">{session.user.name}</div>
               <div className="user-role">{getRoleLabel(role)}</div>
             </div>
-            <button className="logout-btn" onClick={() => signOut({ callbackUrl: '/' })} title="Sign out">
+            <button type="button" className="logout-btn" onClick={handleSignOut} title="Sign out">
               Sign Out
             </button>
           </>

@@ -1,12 +1,12 @@
 'use client'
 import { Doughnut } from 'react-chartjs-2'
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, type ChartData, type ChartOptions } from 'chart.js'
 import type { CategoryDistribution } from '@/types'
 
 ChartJS.register(ArcElement, Tooltip, Legend)
 
 export default function CategoryChart({ data }: { data: CategoryDistribution[] }) {
-  const chartData = {
+  const chartData: ChartData<'doughnut', number[], string> = {
     labels: data.map(d => d.category),
     datasets: [{
       data: data.map(d => d.count),
@@ -23,7 +23,7 @@ export default function CategoryChart({ data }: { data: CategoryDistribution[] }
     }],
   }
 
-  const options = {
+  const options: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -32,7 +32,7 @@ export default function CategoryChart({ data }: { data: CategoryDistribution[] }
         labels: {
           padding: 20,
           usePointStyle: true,
-          font: { family: 'Outfit', size: 12, weight: '500' },
+          font: { family: 'Outfit', size: 12, weight: 500 },
           color: '#64748b'
         }
       },
@@ -48,7 +48,7 @@ export default function CategoryChart({ data }: { data: CategoryDistribution[] }
 
   return (
     <div style={{ height: '240px', position: 'relative' }}>
-      <Doughnut data={chartData} options={options as any} />
+      <Doughnut data={chartData} options={options} />
       <div style={{
         position: 'absolute',
         top: '42%',

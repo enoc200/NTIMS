@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 interface Props {
   isOpen: boolean
@@ -13,22 +14,46 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 480
   const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // Scroll lock removed as per user request
-  }, [isOpen])
+    if (!isOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
-  return (
-    <div className="modal-overlay" ref={overlayRef} onClick={e => { if (e.target === overlayRef.current) onClose() }}>
+  const modal = (
+    <div
+      className="modal-overlay"
+      ref={overlayRef}
+      onClick={e => {
+        if (e.target === overlayRef.current) onClose()
+      }}
+    >
       <div className="modal" style={{ maxWidth }}>
         {title && (
           <div className="modal-header">
             <h2>{title}</h2>
-            <button className="btn-icon" onClick={onClose} style={{ fontSize: '18px' }}>✕</button>
+            <button type="button" className="btn-icon modal-close" onClick={onClose} aria-label="Close modal">
+              ✕
+            </button>
           </div>
         )}
-        {children}
+        <div className="modal-content">{children}</div>
       </div>
     </div>
   )
+
+  return createPortal(modal, document.body)
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import toast from 'react-hot-toast'
 import LoadingSpinner from '@/components/LoadingSpinner'
@@ -18,8 +18,9 @@ export default function UsersPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [formKey, setFormKey] = useState(0)
 
-  async function fetchUsers() {
+  const fetchUsers = useCallback(async function fetchUsers() {
     setLoading(true)
     try {
       const res = await fetch('/api/users')
@@ -35,11 +36,34 @@ export default function UsersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (!session) return
-    fetchUsers()
+    let active = true
+
+    async function loadUsers() {
+      setLoading(true)
+      try {
+        const res = await fetch('/api/users')
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}))
+          throw new Error(d.error || 'Failed to fetch users')
+        }
+        const data = await res.json()
+        if (active) setUsers(data)
+      } catch (error: unknown) {
+        const err = error as { message?: string }
+        toast.error(err.message || 'Failed to fetch users')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    void loadUsers()
+    return () => {
+      active = false
+    }
   }, [session])
 
   const filteredUsers = useMemo(() => {
@@ -57,7 +81,7 @@ export default function UsersPage() {
         throw new Error(d.error || 'Failed to delete user')
       }
       toast.success('User deleted successfully')
-      fetchUsers()
+      void fetchUsers()
     } catch (error: unknown) {
       const err = error as { message?: string }
       toast.error(err.message || 'Failed to delete user')
@@ -66,11 +90,13 @@ export default function UsersPage() {
 
   function openAdd() {
     setEditingUser(null)
+    setFormKey(prev => prev + 1)
     setIsFormOpen(true)
   }
 
   function openEdit(u: User) {
     setEditingUser(u)
+    setFormKey(prev => prev + 1)
     setIsFormOpen(true)
   }
 
@@ -152,6 +178,7 @@ export default function UsersPage() {
       )}
 
       <UserForm
+        key={formKey}
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSaved={fetchUsers}

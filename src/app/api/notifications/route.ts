@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import type { Role } from '@/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,17 +12,13 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const notifications = await prisma.notification.findMany({
-      where: {
-        OR: [
-          { targetRole: null }
-        ]
-      },
+      where: { OR: [{ targetRole: null }] },
       orderBy: { createdAt: 'desc' },
-      take: 20
+      take: 20,
     })
 
     return NextResponse.json(notifications)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 })
   }
 }
@@ -34,15 +31,16 @@ export async function PATCH(request: NextRequest) {
     const { id, readAll } = await request.json()
 
     if (readAll) {
+      const role = session.user.role as Role
       await prisma.notification.updateMany({
         where: {
           OR: [
             { targetRole: null },
-            { targetRole: session.user.role as any }
+            { targetRole: role },
           ],
           read: false
         },
-        data: { read: true }
+        data: { read: true },
       })
       return NextResponse.json({ success: true })
     }
@@ -56,7 +54,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to update notification' }, { status: 500 })
   }
 }

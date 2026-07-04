@@ -119,8 +119,24 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Invalid user id' }, { status: 400 })
     }
 
-    await prisma.user.delete({ where: { id: idNum } })
-    return NextResponse.json({ message: 'User deleted' })
+    try {
+      await prisma.user.delete({ where: { id: idNum } })
+      return NextResponse.json({ message: 'User deleted' })
+    } catch (error) {
+      const anyErr = error as { code?: string }
+
+      // If the user is referenced by existing sales, fall back to deactivating
+      // the account so they can no longer sign in but history remains intact.
+      if (anyErr.code === 'P2003') {
+        await prisma.user.update({
+          where: { id: idNum },
+          data: { active: false },
+        })
+        return NextResponse.json({ message: 'User deactivated' })
+      }
+
+      throw error
+    }
   } catch {
     return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 })
   }

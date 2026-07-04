@@ -15,22 +15,16 @@ A professional, full-stack inventory and POS solution for SMEs built with Next.j
 3. Seed data: `npx tsx prisma/seed.ts`
 4. Run development server: `npm run dev`
 
-## Docker
-Build and run the app with PostgreSQL:
+## Local development
+The app runs locally with your existing Node.js and PostgreSQL setup.
 
-```bash
-docker compose up --build
-```
+- Set `DATABASE_URL` in a `.env` file or your shell environment.
+- Run `npx prisma db push` to sync the schema.
+- Run `npx tsx prisma/seed.ts` to seed demo data.
+- Start the app with `npm run dev`.
 
-The app is available at `http://localhost:3000`. On startup, the web container runs `prisma db push` against the Postgres service.
-
-To load demo data once:
-
-```bash
-docker compose --profile seed run --rm seed
-```
-
-For production, replace `NEXTAUTH_SECRET` in `docker-compose.yml` with a strong secret and set `DATABASE_URL` to your production database.
+## Production
+For production, set `NEXTAUTH_SECRET` and `DATABASE_URL` in your deployment environment.
 
 ## Demo Accounts
 | Role | Username | Password |

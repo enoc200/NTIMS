@@ -5,8 +5,6 @@ import LoadingSpinner from '@/components/LoadingSpinner'
 import { formatKES } from '@/lib/utils'
 import { 
   HiOutlineTrendingUp, 
-  HiOutlineCube, 
-  HiOutlineCash, 
   HiOutlineExclamationCircle, 
   HiOutlineShoppingBag,
   HiOutlineClock
@@ -17,20 +15,31 @@ export default function DashboardPage() {
   const { data: session } = useSession()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
-  const role = session?.user?.role
-
-  function fetchDashboard() {
-    fetch('/api/dashboard')
-      .then(r => r.json())
-      .then(setData)
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }
 
   useEffect(() => {
-    fetchDashboard()
-    const interval = setInterval(fetchDashboard, 30000) // Auto-update every 30 seconds
-    return () => clearInterval(interval)
+    let active = true
+
+    async function loadDashboard() {
+      try {
+        const response = await fetch('/api/dashboard')
+        const payload = await response.json()
+        if (active) setData(payload)
+      } catch {
+        if (active) setData(null)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    void loadDashboard()
+    const interval = setInterval(() => {
+      void loadDashboard()
+    }, 30000)
+
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
   }, [])
 
   if (loading) return <LoadingSpinner />
@@ -45,34 +54,30 @@ export default function DashboardPage() {
           Welcome Back, {session?.user?.name}! 👋
         </h1>
         <p style={{ color: '#64748b', fontSize: '16px', fontWeight: 500 }}>
-          Here's a quick look at your business performance today.
+          Here&apos;s a quick look at your business performance today.
         </p>
       </div>
 
       {/* Colorful Stats Grid */}
       <div className="stats-grid">
         <div className="vibrant-card primary">
-          <div className="vibrant-label">Today's Revenue</div>
+          <div className="vibrant-label">Today&apos;s Revenue</div>
           <div className="vibrant-value">{formatKES(stats.todaysSales)}</div>
-          <div className="icon-bg"><HiOutlineCash /></div>
         </div>
 
         <div className="vibrant-card info">
           <div className="vibrant-label">Total Products</div>
           <div className="vibrant-value">{stats.totalProducts} Items</div>
-          <div className="icon-bg"><HiOutlineCube /></div>
         </div>
 
         <div className="vibrant-card success">
           <div className="vibrant-label">Stock Value</div>
           <div className="vibrant-value">{formatKES(stats.inventoryValue)}</div>
-          <div className="icon-bg"><HiOutlineTrendingUp /></div>
         </div>
 
         <div className="vibrant-card warning">
           <div className="vibrant-label">Stock Alerts</div>
           <div className="vibrant-value">{stats.lowStockCount} Critical</div>
-          <div className="icon-bg"><HiOutlineExclamationCircle /></div>
         </div>
       </div>
 
