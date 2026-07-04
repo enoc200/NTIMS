@@ -32,6 +32,27 @@ type RecentSale = {
   items: Array<unknown>
 }
 
+type SaleInRange = {
+  createdAt: Date
+  total: number
+}
+
+type SalesSummary = {
+  _sum: {
+    total: number | null
+    tax: number | null
+  }
+  _count: {
+    id: number
+  }
+}
+
+type ItemsSummary = {
+  _sum: {
+    quantity: number | null
+  }
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
@@ -103,7 +124,7 @@ export async function GET() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29)
     thirtyDaysAgo.setHours(0, 0, 0, 0)
 
-    const [salesSummary, itemsSummary, recentSales, salesInRange] = await Promise.all([
+    const [salesSummaryRaw, itemsSummaryRaw, recentSalesRaw, salesInRangeRaw] = await Promise.all([
       prisma.sale.aggregate({
         _sum: { total: true, tax: true },
         _count: { id: true },
@@ -122,6 +143,11 @@ export async function GET() {
       }),
     ])
 
+    const salesSummary = salesSummaryRaw as SalesSummary
+    const itemsSummary = itemsSummaryRaw as ItemsSummary
+    const recentSales = recentSalesRaw as RecentSale[]
+    const salesInRange = salesInRangeRaw as SaleInRange[]
+
     const dailyMap: Record<string, number> = {}
     for (let i = 29; i >= 0; i--) {
       const date = new Date()
@@ -129,7 +155,7 @@ export async function GET() {
       dailyMap[date.toISOString().slice(0, 10)] = 0
     }
 
-    salesInRange.forEach(sale => {
+    salesInRange.forEach((sale: SaleInRange) => {
       const dateKey = sale.createdAt.toISOString().slice(0, 10)
       if (dailyMap[dateKey] !== undefined) dailyMap[dateKey] += sale.total
     })
@@ -145,10 +171,10 @@ export async function GET() {
         totalItemsSold: itemsSummary._sum.quantity || 0,
         averageSaleValue: totalSales > 0 ? totalRevenue / totalSales : 0,
         taxCollected: salesSummary._sum.tax || 0,
-      recentSales: recentSales.map((sale: RecentSale) => ({
-        id: sale.id,
-        receiptNumber: sale.receiptNumber,
-        total: sale.total,
+        recentSales: recentSales.map((sale: RecentSale) => ({
+          id: sale.id,
+          receiptNumber: sale.receiptNumber,
+          total: sale.total,
           createdAt: sale.createdAt,
           itemCount: sale.items.length,
         })),
