@@ -22,7 +22,7 @@ export async function GET() {
     })
 
     const soldByProduct = new Map<number, number>()
-    soldItems.forEach(item => {
+    soldItems.forEach((item: { productId: number; quantity: number }) => {
       soldByProduct.set(item.productId, (soldByProduct.get(item.productId) || 0) + item.quantity)
     })
     const productRows: ProductReportItem[] = products.map(product => {
